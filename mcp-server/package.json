@@ -18,6 +18,10 @@
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },
+  "optionalDependencies": {
+    "@google/genai": "^1.0.0",
+    "openai": "^4.80.0"
+  },
   "author": {
     "name": "Jordan Vasconcelos",
     "url": "https://github.com/jordanrendric"
