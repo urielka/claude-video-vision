@@ -173,3 +173,14 @@ MIT — see [LICENSE](./LICENSE).
 - GitHub: [@jordanrendric](https://github.com/jordanrendric)
 - LinkedIn: [jordanvasconcelos](https://www.linkedin.com/in/jordanvasconcelos/)
 - Instagram: [@jordanvasconcelos__](https://www.instagram.com/jordanvasconcelos__/)
+- X/Twitter: [@jordanrendric](https://x.com/jordanrendric)
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=jordanrendric%2Fclaude-video-vision&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=jordanrendric/claude-video-vision&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=jordanrendric/claude-video-vision&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=jordanrendric/claude-video-vision&type=date&legend=top-left" />
+ </picture>
+</a>
