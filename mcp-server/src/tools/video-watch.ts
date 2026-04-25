@@ -50,12 +50,13 @@ export function registerVideoWatch(server: McpServer): void {
       describer_model: z.enum(["opus", "sonnet", "haiku"]).optional().describe("Model for frame-describer agent"),
       start_time: z.string().regex(HMS_REGEX, "Must be HH:MM:SS format").optional().describe("Start time (e.g. '00:01:30')"),
       end_time: z.string().regex(HMS_REGEX, "Must be HH:MM:SS format").optional().describe("End time (e.g. '00:05:00')"),
+      skip_audio: z.boolean().default(false).describe("Skip audio extraction and transcription — frames only"),
     },
     async (params) => {
       const config = loadConfig(CONFIG_PATH);
 
-      // Block if not configured
-      if (config.backend === "unconfigured") {
+      // Block if not configured (unless skip_audio — frames-only mode needs no backend)
+      if (config.backend === "unconfigured" && !params.skip_audio) {
         return { content: [{ type: "text", text: UNCONFIGURED_MESSAGE }] };
       }
 
@@ -88,7 +89,9 @@ export function registerVideoWatch(server: McpServer): void {
 
       let audioPromise: Promise<AudioResult>;
 
-      if (config.backend === "gemini-api") {
+      if (params.skip_audio) {
+        audioPromise = Promise.resolve({ backend: "none", transcription: [], audio_tags: [], full_analysis: null });
+      } else if (config.backend === "gemini-api") {
         const audioDir = join(workDir, "audio");
         audioPromise = extractAudio(safePath, audioDir, {
           startTime: params.start_time,
