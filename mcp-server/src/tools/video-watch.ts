@@ -89,7 +89,7 @@ export function registerVideoWatch(server: McpServer): void {
 
       let audioPromise: Promise<AudioResult>;
 
-      if (params.skip_audio) {
+      if (params.skip_audio || !metadata.has_audio) {
         audioPromise = Promise.resolve({ backend: "none", transcription: [], audio_tags: [], full_analysis: null });
       } else if (config.backend === "gemini-api") {
         const audioDir = join(workDir, "audio");
