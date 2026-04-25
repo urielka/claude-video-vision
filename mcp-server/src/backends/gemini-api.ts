@@ -94,6 +94,7 @@ export async function analyzeWithGeminiApi(audioPath: string): Promise<AudioResu
     throw new Error("GEMINI_API_KEY environment variable is not set. Run video_setup to configure.");
   }
 
+  // @ts-ignore — optional peer dependency, not installed in all environments
   const { GoogleGenAI, createPartFromUri, createUserContent, Type } = await import("@google/genai");
   const ai = new GoogleGenAI({ apiKey });
 

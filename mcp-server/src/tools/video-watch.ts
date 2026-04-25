@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { join } from "path";
+import { join, resolve } from "path";
 import { homedir } from "os";
-import { mkdirSync, rmSync } from "fs";
+import { mkdirSync, rmSync, existsSync, statSync } from "fs";
 import { tmpdir } from "os";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { loadConfig } from "../config.js";
@@ -14,6 +14,20 @@ import { parseHMS, shiftAudioResult } from "../utils/timestamps.js";
 import type { AudioResult, VideoWatchResult } from "../types.js";
 
 const CONFIG_PATH = join(homedir(), ".claude-video-vision", "config.json");
+
+const HMS_REGEX = /^\d{2}:\d{2}:\d{2}$/;
+
+function validateVideoPath(inputPath: string): string {
+  const resolved = resolve(inputPath);
+  if (!existsSync(resolved)) {
+    throw new Error(`File not found: ${resolved}`);
+  }
+  const stat = statSync(resolved);
+  if (!stat.isFile()) {
+    throw new Error(`Path is not a regular file: ${resolved}`);
+  }
+  return resolved;
+}
 
 const UNCONFIGURED_MESSAGE = `## claude-video-vision is not configured yet!
 
@@ -29,13 +43,13 @@ export function registerVideoWatch(server: McpServer): void {
     "video_watch",
     "Extract frames and process audio from a video file. Returns frames (as base64 images or text descriptions) + transcription + audio analysis for Claude to understand the video content. IMPORTANT: If not configured, tell the user to run /setup-video-vision first.",
     {
-      path: z.string().describe("Path to the video file"),
+      path: z.string().describe("Absolute or relative path to the video file"),
       fps: z.union([z.coerce.number().positive(), z.literal("auto")]).default("auto").describe("Frames per second to extract"),
       resolution: z.coerce.number().min(128).max(2048).optional().describe("Frame width in px (maintains aspect ratio)"),
       frame_mode: z.enum(["images", "descriptions"]).optional().describe("Return frames as base64 images or text descriptions"),
       describer_model: z.enum(["opus", "sonnet", "haiku"]).optional().describe("Model for frame-describer agent"),
-      start_time: z.string().optional().describe("Start time (e.g. '00:01:30')"),
-      end_time: z.string().optional().describe("End time (e.g. '00:05:00')"),
+      start_time: z.string().regex(HMS_REGEX, "Must be HH:MM:SS format").optional().describe("Start time (e.g. '00:01:30')"),
+      end_time: z.string().regex(HMS_REGEX, "Must be HH:MM:SS format").optional().describe("End time (e.g. '00:05:00')"),
     },
     async (params) => {
       const config = loadConfig(CONFIG_PATH);
@@ -47,9 +61,10 @@ export function registerVideoWatch(server: McpServer): void {
 
       const resolution = params.resolution || config.frame_resolution;
       const frameMode = params.frame_mode || config.frame_mode;
+      const safePath = validateVideoPath(params.path);
 
       // 1. Get metadata
-      const metadata = await getVideoMetadata(params.path);
+      const metadata = await getVideoMetadata(safePath);
 
       // 2. Calculate fps
       const fps = params.fps === "auto"
@@ -62,7 +77,7 @@ export function registerVideoWatch(server: McpServer): void {
       const framesDir = join(workDir, "frames");
 
       // 4. Run frame extraction and audio processing IN PARALLEL
-      const framesPromise = extractFrames(params.path, {
+      const framesPromise = extractFrames(safePath, {
         fps,
         resolution,
         outputDir: framesDir,
@@ -75,13 +90,13 @@ export function registerVideoWatch(server: McpServer): void {
 
       if (config.backend === "gemini-api") {
         const audioDir = join(workDir, "audio");
-        audioPromise = extractAudio(params.path, audioDir, {
+        audioPromise = extractAudio(safePath, audioDir, {
           startTime: params.start_time,
           endTime: params.end_time,
         }).then((wavPath) => analyzeWithGeminiApi(wavPath));
       } else if (config.backend === "openai") {
         const audioDir = join(workDir, "audio");
-        audioPromise = extractAudio(params.path, audioDir, {
+        audioPromise = extractAudio(safePath, audioDir, {
           startTime: params.start_time,
           endTime: params.end_time,
         }).then((wavPath) => transcribeWithOpenAI(wavPath));
@@ -89,7 +104,7 @@ export function registerVideoWatch(server: McpServer): void {
         // local
         const audioDir = join(workDir, "audio");
         const modelDir = join(homedir(), ".claude-video-vision", "models");
-        audioPromise = extractAudio(params.path, audioDir, {
+        audioPromise = extractAudio(safePath, audioDir, {
           startTime: params.start_time,
           endTime: params.end_time,
         }).then((wavPath) =>

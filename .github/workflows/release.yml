@@ -15,6 +15,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Need a token with push rights to commit .mcp.json back
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,6 +44,25 @@ jobs:
       - name: Test
         working-directory: mcp-server
         run: npm test
+
+      - name: Write .mcp.published.json with pinned npm version
+        run: |
+          VERSION=$(node -p "require('./mcp-server/package.json').version")
+          node -e "
+            const fs = require('fs');
+            const cfg = {
+              'claude-video-vision': {
+                command: 'npx',
+                args: ['claude-video-vision@' + process.argv[1]]
+              }
+            };
+            fs.writeFileSync('.mcp.published.json', JSON.stringify(cfg, null, 2) + '\n');
+          " "$VERSION"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .mcp.published.json
+          git commit -m "chore: update .mcp.published.json to v$VERSION [skip ci]"
+          git push origin HEAD:main
 
       - name: Publish to npm (via Trusted Publisher / OIDC)
         working-directory: mcp-server

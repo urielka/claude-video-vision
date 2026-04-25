@@ -1,0 +1,8 @@
+{
+  "claude-video-vision": {
+    "command": "npx",
+    "args": [
+      "claude-video-vision@1.1.0"
+    ]
+  }
+}

@@ -22,6 +22,7 @@
     "test:watch": "vitest",
     "measure": "tsx scripts/measure-tokens.ts",
     "test:gemini": "tsx scripts/test-gemini-api.ts",
+    "gen-mcp-config": "node -e \"const fs=require('fs'),v=require('./package.json').version,cfg={'claude-video-vision':{command:'npx',args:['claude-video-vision@'+v]}};fs.writeFileSync('../.mcp.published.json',JSON.stringify(cfg,null,2)+'\\n');console.log('Wrote .mcp.published.json for v'+v)\"",
     "prepublishOnly": "npm run build && npm test"
   },
   "dependencies": {
